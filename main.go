@@ -33,7 +33,7 @@ func run(username string) error {
 	query := fmt.Sprintf("repo:gravitational/teleport type:pr is:open author:app/dependabot assignee:%q", username)
 	result, _, err := client.Search.Issues(ctx, query, &github.SearchOptions{
 		ListOptions: github.ListOptions{
-			PerPage: 3,
+			PerPage: 20,
 		},
 	})
 	if err != nil {
@@ -59,16 +59,16 @@ func run(username string) error {
 		})
 	}
 
-	var cherryPickCommands []string
+	var commitSHAs []string
 	var prCloseCommands []string
 	var dependabotPRs []string
 	for _, pr := range prs {
-		cherryPickCommands = append(cherryPickCommands, "git cherry-pick "+pr.head)
+		commitSHAs = append(commitSHAs, pr.head)
 		prCloseCommands = append(prCloseCommands, fmt.Sprintf(`gh pr close %d --comment "closing in favor of ${PR}"`, pr.number))
 		dependabotPRs = append(dependabotPRs, pr.url)
 	}
 
-	fmt.Println(strings.Join(cherryPickCommands, " && \\\n"))
+	fmt.Println("git cherry-pick ", strings.Join(commitSHAs, " "))
 	fmt.Println()
 	fmt.Printf(`gh pr create --title "Dependency updates" --body 'This PR replaces the following PRs opened by dependabot:
 
