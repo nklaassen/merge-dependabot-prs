@@ -33,7 +33,7 @@ func run(username string) error {
 	query := fmt.Sprintf("repo:gravitational/teleport type:pr is:open author:app/dependabot assignee:%q", username)
 	result, _, err := client.Search.Issues(ctx, query, &github.SearchOptions{
 		ListOptions: github.ListOptions{
-			PerPage: 20,
+			PerPage: 30,
 		},
 	})
 	if err != nil {
@@ -65,19 +65,27 @@ func run(username string) error {
 	for _, pr := range prs {
 		commitSHAs = append(commitSHAs, pr.head)
 		prCloseCommands = append(prCloseCommands, fmt.Sprintf(`gh pr close %d --comment "closing in favor of ${PR}"`, pr.number))
-		dependabotPRs = append(dependabotPRs, pr.url)
+		dependabotPRs = append(dependabotPRs, fmt.Sprintf("#%d", pr.number))
 	}
 
-	fmt.Println("git cherry-pick ", strings.Join(commitSHAs, " "))
+	fmt.Println("copy, paste, and run each command output below while in the teleport repo directory")
 	fmt.Println()
-	fmt.Printf(`gh pr create --title "Dependency updates" --body 'This PR replaces the following PRs opened by dependabot:
+	fmt.Printf("> git switch -c %s/dependency-updates\n", username)
+	fmt.Println()
+	fmt.Println("> git cherry-pick ", strings.Join(commitSHAs, " "))
+	fmt.Println()
+	fmt.Println(`> go mod tidy && git add go.mod go.sum && pushd api && go mod tidy && git add go.mod go.sum && popd && git commit -m "go mod tidy"`)
+	fmt.Println()
+	fmt.Printf(`> gh pr create --web --title "Dependency updates" --body 'This PR replaces the following PRs opened by dependabot:
 
 - %s
 '
 `,
 		strings.Join(dependabotPRs, "\n- "))
 	fmt.Println()
-	fmt.Println(strings.Join(prCloseCommands, " && \\\n"))
+	fmt.Println("> export PR=#<number of new PR>")
+	fmt.Println()
+	fmt.Printf("> %s\n", strings.Join(prCloseCommands, " && \\\n"))
 
 	return nil
 }
