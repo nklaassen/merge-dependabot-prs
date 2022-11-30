@@ -64,7 +64,7 @@ func run(username string) error {
 	var dependabotPRs []string
 	for _, pr := range prs {
 		commitSHAs = append(commitSHAs, pr.head)
-		prCloseCommands = append(prCloseCommands, fmt.Sprintf(`gh pr close %d --comment "closing in favor of ${PR}"`, pr.number))
+		prCloseCommands = append(prCloseCommands, fmt.Sprintf(`gh pr close %d --comment "closing in favor of #${PR}"`, pr.number))
 		dependabotPRs = append(dependabotPRs, fmt.Sprintf("#%d", pr.number))
 	}
 
